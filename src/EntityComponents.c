@@ -15,6 +15,8 @@
 #include "Audio.h"
 #include "Bitmap.h"
 
+#define BETTER_FLYING
+
 /*########################################################################################################################*
 *----------------------------------------------------AnimatedComponent----------------------------------------------------*
 *#########################################################################################################################*/
@@ -1027,7 +1029,14 @@ static void PhysicsComp_MoveFlying(struct PhysicsComp* comp, Vec3 vel, float fac
 	struct HacksComp* hacks = comp->Hacks;
 	float yVel;
 
+#ifdef BETTER_FLYING
+	if (hacks->FlyingUp || hacks->FlyingDown)
+		yMul = 9.0f;
+#endif
+
 	PhysicsComp_MoveHor(comp, vel, factor);
+
+#ifndef BETTER_FLYING
 	yVel = Math_SqrtF(entity->Velocity.X * entity->Velocity.X + entity->Velocity.Z * entity->Velocity.Z);
 	/* make horizontal speed the same as vertical speed */
 	if ((vel.X != 0.0f || vel.Z != 0.0f) && yVel > 0.001f) {
@@ -1036,6 +1045,7 @@ static void PhysicsComp_MoveFlying(struct PhysicsComp* comp, Vec3 vel, float fac
 		if (hacks->FlyingUp || comp->Jumping) entity->Velocity.Y += yVel;
 		if (hacks->FlyingDown)                entity->Velocity.Y -= yVel;
 	}
+#endif
 	PhysicsComp_Move(comp, drag, gravity, yMul);
 }
 
@@ -1160,7 +1170,11 @@ void PhysicsComp_PhysicsTick(struct PhysicsComp* comp, Vec3 vel) {
 				entity->Velocity.X *= scale;
 				entity->Velocity.Z *= scale;
 			}
+#ifdef BETTER_FLYING
+		} else if (entity->OnGround) {
+#else
 		} else if (entity->OnGround || hacks->Flying) {
+#endif
 			Vec3_Mul3By(&entity->Velocity, &entity->Model->groundFriction); /* air drag or ground friction */
 		}
 	}
